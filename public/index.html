@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090d18">
+  <title>Meaning Games</title>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090d18;
+      --panel: #111827;
+      --line: #263247;
+      --muted: #9baac2;
+      --text: #f2f6ff;
+      --accent: #80d8ff;
+      --heat: #80d8ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font: 15px/1.6 system-ui, sans-serif;
+      background:
+        radial-gradient(ellipse at 15% 0%, #17304b80, transparent 45%),
+        radial-gradient(ellipse at 90% 40%, #3a1d4a50, transparent 40%),
+        var(--bg);
+    }
+
+    button, input, select { font: inherit; }
+
+    button, select {
+      cursor: pointer;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #172236;
+      padding: 11px 16px;
+    }
+
+    button:hover:not(:disabled) {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    button:disabled { opacity: .45; cursor: not-allowed; }
+
+    :focus-visible {
+      outline: 3px solid #80d8ff;
+      outline-offset: 4px;
+    }
+
+    .primary {
+      background: #b8eeff;
+      color: #071322;
+      font-weight: 800;
+      border-color: transparent;
+    }
+
+    .skip {
+      position: absolute;
+      top: -80px;
+      left: 20px;
+      padding: 10px;
+      background: white;
+      color: black;
+    }
+
+    .skip:focus { top: 10px; z-index: 10; }
+
+    .shell { max-width: 1120px; margin: auto; padding: 32px 24px 60px; }
+
+    header, .row, .stats, .guess-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand { font-size: 19px; font-weight: 850; letter-spacing: -.5px; }
+    .brand span { color: #80d8ff; }
+    .tag, .eyebrow {
+      font-size: 11px;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .tag {
+      border: 1px solid var(--line);
+      border-radius: 100px;
+      padding: 7px 12px;
+    }
+
+    nav { display: flex; gap: 10px; margin: 32px 0; }
+    nav button { background: transparent; }
+    nav button.active { background: #22364b; border-color: #80d8ff70; }
+
+    .hero { margin-bottom: 26px; }
+    h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; margin: 10px 0 14px; letter-spacing: -2px; }
+    h2 { margin: 0; font-size: 19px; }
+    p { color: var(--muted); margin: 8px 0; }
+
+    .layout { display: grid; grid-template-columns: 1.05fr 1fr; gap: 22px; }
+
+    .panel {
+      background: linear-gradient(145deg, #152034e8, #0e1524f0);
+      border: 1px solid var(--line);
+      border-radius: 23px;
+      padding: 24px;
+      box-shadow: 0 20px 70px #0003;
+    }
+
+    .controls { display: flex; gap: 9px; flex-wrap: wrap; margin-bottom: 20px; }
+    .controls select { min-width: 120px; }
+    [hidden] { display: none !important; }
+
+    .radar {
+      position: relative;
+      width: 224px;
+      height: 224px;
+      margin: 28px auto;
+      border: 1px solid #80d8ff33;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(90deg, transparent 49.7%, #80d8ff20 50%, transparent 50.3%),
+        linear-gradient(transparent 49.7%, #80d8ff20 50%, transparent 50.3%),
+        repeating-radial-gradient(circle, transparent 0 35px, #80d8ff18 36px 37px);
+      overflow: hidden;
+    }
+
+    .radar::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, transparent 65%, #80d8ff22 95%, #80d8ff75);
+      animation: sweep 7s linear infinite;
+    }
+
+    .radar-center {
+      position: relative;
+      width: 122px;
+      height: 122px;
+      border-radius: 50%;
+      background: #0d1628eb;
+      border: 1px solid var(--heat);
+      box-shadow: 0 0 40px color-mix(in srgb, var(--heat) 20%, transparent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+
+    .radar-center strong { font-size: 35px; line-height: 1.2; color: var(--heat); }
+    .radar-center span { color: var(--muted); font-size: 11px; }
+    @keyframes sweep { to { transform: rotate(360deg); } }
+
+    .temperature { text-align: center; font-weight: 750; margin-bottom: 18px; }
+
+    .meter {
+      position: relative;
+      height: 8px;
+      border-radius: 20px;
+      background: linear-gradient(90deg, #74cfff, #80e5dd, #f6d781, #ff865e);
+      margin: 18px 0 6px;
+    }
+
+    .marker {
+      position: absolute;
+      top: -5px;
+      left: 0;
+      width: 5px;
+      height: 18px;
+      background: white;
+      border-radius: 3px;
+      transform: translateX(-50%);
+      transition: left .5s;
+    }
+
+    .scale { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+    .stats { border-top: 1px solid var(--line); margin-top: 24px; padding-top: 18px; }
+    .stat strong { display: block; font-size: 22px; }
+    .stat span { font-size: 12px; color: var(--muted); }
+
+    form { display: flex; gap: 9px; margin: 22px 0 12px; }
+
+    input {
+      width: 100%;
+      min-width: 0;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid #36465d;
+      color: white;
+      background: #080f1e;
+    }
+
+    .hintline { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .hintline span { font-size: 12px; color: var(--muted); }
+    #hints { margin-top: 12px; color: #e1d5ff; font-size: 14px; }
+    #error { min-height: 24px; color: #ffaaa4; font-size: 13px; margin-top: 12px; }
+
+    .anchors { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 28px 0; }
+    .anchor {
+      flex: 1;
+      text-align: center;
+      padding: 21px 8px;
+      border: 1px solid #638ca16b;
+      border-radius: 17px;
+      background: #12344555;
+      font-size: 21px;
+      font-weight: 750;
+    }
+    .anchor:last-child { border-color: #aa8cd566; background: #3a235855; }
+
+    .bridge { font-size: 25px; color: var(--muted); }
+    .rule { border-left: 2px solid #80d8ff; padding-left: 12px; font-size: 13px; }
+
+    #trail {
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      margin-top: 20px;
+      max-height: 580px;
+      overflow-y: auto;
+    }
+
+    .empty { text-align: center; padding: 70px 15px; color: var(--muted); }
+    .empty b { display: block; font-size: 36px; margin-bottom: 12px; }
+
+    .guess {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 15px;
+      background: #0b1423;
+    }
+
+    .guess.best {
+      border-color: #80d8ff70;
+      background: linear-gradient(110deg, #18324870, #101a2a);
+    }
+
+    .guess-word { font-weight: 700; overflow-wrap: anywhere; }
+    .guess-score { font-weight: 800; font-size: 20px; }
+    .guess-meta { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+    .bar { height: 4px; background: #233046; border-radius: 10px; margin-top: 11px; overflow: hidden; }
+    .bar > div { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #7dcfff, #ffc18b); }
+
+    .sides { display: flex; justify-content: space-between; gap: 10px; color: #b4c7e0; font-size: 12px; margin-top: 9px; }
+
+    #outcome {
+      padding: 14px;
+      border: 1px solid #92e8bd66;
+      border-radius: 12px;
+      background: #143c2b66;
+      color: #c5ffe0;
+      margin-top: 15px;
+    }
+
+    footer { margin-top: 26px; color: var(--muted); font-size: 12px; text-align: center; }
+
+    @media (max-width: 760px) {
+      .layout { grid-template-columns: 1fr; }
+      .shell { padding: 22px 16px 40px; }
+      header .tag { display: none; }
+      .panel { padding: 20px; }
+      nav button { flex: 1; padding: 10px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+
+<body>
+  <a class="skip" href="#main">Skip to main content</a>
+
+  <div class="shell">
+    <header>
+      <div class="brand">◈ meaning<span>games</span></div>
+      <div class="tag">Marengo 3.0 · Amazon Bedrock</div>
+    </header>
+
+    <nav aria-label="Choose a game">
+      <button id="huntTab" class="active" aria-pressed="true">🎯 Meaning Hunt</button>
+      <button id="ropeTab" aria-pressed="false">⚖️ Semantic Tightrope</button>
+    </nav>
+
+    <main id="main">
+      <section class="hero">
+        <div class="eyebrow" id="eyebrow">Follow the meaning</div>
+        <h1 id="title">Different words. Same wavelength.</h1>
+        <p id="description">Find the hidden word. Every guess tells you how close your meaning is.</p>
+      </section>
+
+      <div class="controls">
+        <select id="play" aria-label="Round type">
+          <option value="daily">Daily challenge</option>
+          <option value="free">Free play</option>
+        </select>
+        <select id="theme" aria-label="Free-play theme" hidden>
+          <option value="all">All themes</option>
+          <option value="nature">Nature</option>
+          <option value="food">Food</option>
+          <option value="technology">Technology</option>
+        </select>
+        <button id="newRound">Start / resume daily</button>
+      </div>
+
+      <div class="layout">
+        <section class="panel" aria-label="Game board">
+          <div class="row">
+            <h2 id="boardTitle">Your semantic radar</h2>
+            <span class="tag" id="roundTag">Daily</span>
+          </div>
+
+          <div id="anchors" class="anchors" hidden>
+            <div class="anchor" id="leftAnchor"></div>
+            <div class="bridge">⟷</div>
+            <div class="anchor" id="rightAnchor"></div>
+          </div>
+
+          <div class="radar" aria-hidden="true">
+            <div class="radar-center">
+              <strong id="radarScore">—</strong>
+              <span>BEST GAME SCORE</span>
+            </div>
+          </div>
+
+          <div class="temperature" id="temperature">Your first guess starts the signal.</div>
+          <div class="meter"><div class="marker" id="marker"></div></div>
+          <div class="scale"><span>Far apart</span><span>Close in meaning</span></div>
+
+          <p class="rule" id="rule">Similarity guides you. Only the exact hidden word wins.</p>
+
+          <div class="stats">
+            <div class="stat"><strong id="attempts">0</strong><span>Guesses</span></div>
+            <div class="stat"><strong id="bestScore">—</strong><span>Best score</span></div>
+            <div class="stat"><strong id="thirdStat">1000</strong><span id="thirdLabel">Points available</span></div>
+          </div>
+
+          <form id="guessForm">
+            <label for="guessInput" hidden>Your guess</label>
+            <input id="guessInput" autocomplete="off" maxlength="64"
+              placeholder="Try a word or short phrase…" required>
+            <button class="primary" id="submit" type="submit">Guess ↗</button>
+          </form>
+
+          <div class="hintline" id="hintline">
+            <button id="hint">Reveal category</button>
+            <span>−150 points · 2 hints per round</span>
+          </div>
+
+          <div id="hints"></div>
+          <div id="outcome" role="status" hidden></div>
+          <div id="error" role="alert"></div>
+        </section>
+
+        <section class="panel" aria-label="Guess history">
+          <div class="row">
+            <h2>Your guess trail</h2>
+            <span class="tag">Closest first</span>
+          </div>
+          <p>Explore a direction. Follow the strongest signal.</p>
+          <div id="trail"></div>
+        </section>
+      </div>
+    </main>
+
+    <footer>
+      Scores are cosine-based game values, not probabilities.
+      Guesses are sent to Amazon Bedrock for embedding.
+      Daily rounds reset at 00:00 UTC.
+    </footer>
+
+    <div id="announcement" role="status" aria-live="polite"
+      style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)"></div>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    let game = null;
+    let selectedMode = "hunt";
+    let busy = false;
+
+    async function api(path, body) {
+      const response = await fetch("/api/" + path, {
+        method: body === undefined ? "GET" : "POST",
+        headers: body === undefined ? {} : { "Content-Type": "application/json" },
+        body: body === undefined ? undefined : JSON.stringify(body)
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Request failed.");
+      return data;
+    }
+
+    function node(tag, className, text) {
+      const el = document.createElement(tag);
+      if (className) el.className = className;
+      if (text !== undefined) el.textContent = text;
+      return el;
+    }
+
+    function setBusy(value) {
+      busy = value;
+      $("submit").disabled = value || !game || game.done;
+      $("guessInput").disabled = value || !game || game.done;
+      $("hint").disabled =
+        value || !game || game.done || game.hintsUsed >= 2;
+      ["newRound", "huntTab", "ropeTab", "play", "theme"].forEach(id => {
+        $(id).disabled = value;
+      });
+      $("submit").textContent = value ? "Scoring…" : "Guess ↗";
+    }
+
+    function syncControls() {
+      const hunt = selectedMode === "hunt";
+      $("play").hidden = !hunt;
+      $("theme").hidden = !hunt || $("play").value !== "free";
+      $("newRound").textContent =
+        hunt && $("play").value === "daily"
+          ? "Start / resume daily"
+          : "New round ↻";
+    }
+
+    function render() {
+      if (!game) return;
+      selectedMode = game.mode;
+      const hunt = game.mode === "hunt";
+      const best = game.best;
+      const sorted = [...game.guesses].sort((a, b) => b.score - a.score);
+      const latest = game.guesses.at(-1);
+
+      $("huntTab").classList.toggle("active", hunt);
+      $("ropeTab").classList.toggle("active", !hunt);
+      $("huntTab").setAttribute("aria-pressed", String(hunt));
+      $("ropeTab").setAttribute("aria-pressed", String(!hunt));
+
+      $("eyebrow").textContent = hunt ? "Follow the meaning" : "Find the connection";
+      $("title").textContent = hunt
+        ? "Different words. Same wavelength."
+        : "Two worlds. One connecting idea.";
+      $("description").textContent = hunt
+        ? "Find the hidden word. Every guess tells you how close your meaning is."
+        : "Find a word or short phrase close to both anchors. Make your best bridge in eight attempts.";
+
+      $("boardTitle").textContent = hunt ? "Your semantic radar" : "Your balancing act";
+      $("roundTag").textContent = hunt
+        ? game.play === "daily" ? game.day : game.theme
+        : `${game.remaining} attempts left`;
+
+      $("anchors").hidden = hunt;
+      $("hintline").hidden = !hunt;
+      if (!hunt) {
+        $("leftAnchor").textContent = game.anchors[0];
+        $("rightAnchor").textContent = game.anchors[1];
+      }
+
+      $("rule").textContent = hunt
+        ? "Similarity guides you. Only the exact hidden word wins."
+        : "Your score is the lower of your two similarities. Both sides matter.";
+
+      const scoreText = best === null ? "—" : best.toFixed(1);
+      $("radarScore").textContent = scoreText;
+      $("bestScore").textContent = scoreText;
+      $("attempts").textContent = game.guesses.length;
+      $("thirdStat").textContent = hunt ? game.points : game.remaining;
+      $("thirdLabel").textContent = hunt
+        ? game.solved ? "Final points" : "Points available"
+        : "Attempts left";
+
+      $("marker").style.left = `${best ?? 0}%`;
+      document.documentElement.style.setProperty(
+        "--heat",
+        best === null || best < 35 ? "#80d8ff" : best < 60 ? "#e8df8b" : "#ffac79"
+      );
+
+      $("temperature").textContent = game.solved
+        ? "🎉 Signal found!"
+        : latest
+          ? `${latest.label}${latest.personalBest ? " · New personal best!" : ""}`
+          : "Your first guess starts the signal.";
+
+      $("hint").textContent =
+        game.hintsUsed === 0 ? "Reveal category" :
+        game.hintsUsed === 1 ? "Reveal stronger clue" : "Hints used";
+
+      $("hints").replaceChildren();
+      if (game.category) $("hints").append(node("div", "", `Category: ${game.category}`));
+      if (game.clue) $("hints").append(node("div", "", `Clue: ${game.clue}`));
+
+      $("outcome").hidden = !game.done;
+      if (game.done) {
+        $("outcome").textContent = hunt
+          ? `You found “${game.answer}” in ${game.guesses.length} guesses. ${game.points} points!`
+          : `Round complete! Your best bridge was “${sorted[0].word}” with ${sorted[0].score.toFixed(1)} points.`;
+      }
+
+      $("trail").replaceChildren();
+
+      if (!sorted.length) {
+        const empty = node("div", "empty");
+        empty.append(node("b", "", hunt ? "◎" : "⟷"));
+        empty.append(node("div", "", "No guesses yet."));
+        empty.append(node("div", "", hunt ? "Start broad. Get curious." : "Think of what both ideas share."));
+        $("trail").append(empty);
+      }
+
+      for (let i = 0; i < sorted.length; i++) {
+        const guess = sorted[i];
+        const card = node("article", "guess" + (i === 0 ? " best" : ""));
+        const top = node("div", "guess-top");
+        top.append(
+          node("div", "guess-word", guess.word),
+          node("div", "guess-score", guess.score.toFixed(1))
+        );
+
+        card.append(top);
+        card.append(node(
+          "div", "guess-meta",
+          `Guess ${guess.number} · ${guess.label}${i === 0 ? " · ★ Closest so far" : ""}`
+        ));
+
+        if (guess.sides) {
+          const sides = node("div", "sides");
+          sides.append(
+            node("span", "", `${game.anchors[0]}: ${guess.sides[0].toFixed(1)}`),
+            node("span", "", `${game.anchors[1]}: ${guess.sides[1].toFixed(1)}`)
+          );
+          card.append(sides);
+          card.title = `Raw cosine: ${guess.similarities.map(n => n.toFixed(4)).join(", ")}`;
+        } else {
+          card.title = `Raw cosine: ${guess.similarity.toFixed(4)}`;
+        }
+
+        const bar = node("div", "bar");
+        const fill = node("div");
+        fill.style.width = `${guess.score}%`;
+        bar.append(fill);
+        card.append(bar);
+        $("trail").append(card);
+      }
+
+      syncControls();
+      setBusy(busy);
+    }
+
+    async function action(fn) {
+      if (busy) return;
+      $("error").textContent = "";
+      setBusy(true);
+      try {
+        await fn();
+      } catch (error) {
+        $("error").textContent = error.message;
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function start(mode = selectedMode) {
+      await action(async () => {
+        game = await api("start", {
+          mode,
+          play: $("play").value,
+          theme: $("theme").value
+        });
+        $("guessInput").value = "";
+        render();
+      });
+      if (game && !game.done) $("guessInput").focus();
+    }
+
+    $("huntTab").onclick = () => start("hunt");
+    $("ropeTab").onclick = () => start("tightrope");
+    $("newRound").onclick = () => start();
+    $("play").onchange = syncControls;
+
+    $("guessForm").onsubmit = async event => {
+      event.preventDefault();
+      const word = $("guessInput").value.trim();
+      if (!word) return;
+
+      await action(async () => {
+        game = await api("guess", { word });
+        $("guessInput").value = "";
+        render();
+
+        const latest = game.guesses.at(-1);
+        $("announcement").textContent = game.done
+          ? $("outcome").textContent
+          : `${latest.word}: ${latest.score.toFixed(1)}. ${latest.label}.`;
+      });
+
+      if (game && !game.done) $("guessInput").focus();
+    };
+
+    $("hint").onclick = () => action(async () => {
+      game = await api("hint", {});
+      render();
+      $("announcement").textContent = game.clue || game.category;
+    });
+
+    async function boot() {
+      await action(async () => {
+        game = await api("state");
+        if (!game) {
+          game = await api("start", {
+            mode: "hunt",
+            play: "daily",
+            theme: "all"
+          });
+        }
+        if (game.mode === "hunt") {
+          $("play").value = game.play;
+          $("theme").value = game.theme;
+        }
+        render();
+      });
+    }
+
+    boot();
+  </script>
+</body>
+</html>
