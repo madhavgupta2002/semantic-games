@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+key.txt
+*.pem
+.DS_Store
+.claude/
+.playwright-mcp/
